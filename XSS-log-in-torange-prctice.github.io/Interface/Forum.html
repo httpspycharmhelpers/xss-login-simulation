@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XSS论坛挑战 - 第二关</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(45deg, #283048, #859398);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .container {
+            max-width: 1100px;
+            width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header {
+            background: linear-gradient(to right, #283048, #859398);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: "";
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+        
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .header p {
+            font-size: 18px;
+            max-width: 700px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+            opacity: 0.9;
+        }
+        
+        .nav {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            padding: 0 30px;
+        }
+        
+        .nav-item {
+            padding: 15px 25px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .nav-item.active {
+            border-bottom: 3px solid #283048;
+            color: #283048;
+        }
+        
+        .content {
+            display: flex;
+            padding: 30px;
+        }
+        
+        .instructions {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-right: 20px;
+            border-left: 4px solid #283048;
+        }
+        
+        .instructions h2 {
+            color: #283048;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .step {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        .step-number {
+            background: #283048;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .step-content h3 {
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .step-content p {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #555;
+        }
+        
+        .step-content .hint {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        .forum {
+            flex: 2;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .forum h2 {
+            color: #283048;
+            margin-bottom: 25px;
+            font-size: 24px;
+            text-align: center;
+        }
+        
+        .post-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .form-group input, 
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .form-group input:focus, 
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #283048;
+            box-shadow: 0 0 0 3px rgba(40, 48, 72, 0.2);
+        }
+        
+        .post-btn {
+            padding: 12px 25px;
+            background: linear-gradient(to right, #283048, #859398);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .post-btn:hover {
+            background: linear-gradient(to right, #1e2538, #6b747d);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(40, 48, 72, 0.3);
+        }
+        
+        .posts {
+            margin-top: 30px;
+        }
+        
+        .post {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .post-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #283048;
+        }
+        
+        .post-content {
+            line-height: 1.6;
+            color: #444;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .level-indicator {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        
+        .level {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ddd;
+            margin: 0 5px;
+        }
+        
+        .level.active {
+            background: #283048;
+        }
+        
+        .admin-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #283048;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        .admin-link:hover {
+            text-decoration: underline;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #666;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .instructions {
+                margin-right: 0;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>XSS 论坛挑战</h1>
+            <p>第二关：在论坛中注入图片</p>
+        </div>
+        
+        <div class="nav">
+            <div class="nav-item active">论坛首页</div>
+            <div class="nav-item">我的笔记</div>
+            <div class="nav-item">设置</div>
+        </div>
+        
+        <div class="content">
+            <div class="instructions">
+                <h2>挑战说明</h2>
+                
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>理解挑战目标</h3>
+                        <p>在本关卡中，您需要在论坛中发布一篇包含恶意图片的笔记。图片加载失败时触发onerror事件执行JavaScript代码。</p>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>成功条件</h3>
+                        <p>在笔记内容中注入以下代码：</p>
+                        <div class="hint">&lt;img src="x" onerror="alert(2)"&gt;</div>
+                        <p>成功注入后，当后台管理员查看笔记时会弹出警告框</p>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>尝试注入</h3>
+                        <p>在笔记内容输入框中输入包含恶意图片标签的代码：</p>
+                        <div class="hint">&lt;img src="invalid-image" onerror="alert('XSS成功!')"&gt;</div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>完成挑战</h3>
+                        <p>成功注入后，管理员在后台查看时会触发XSS，整个挑战完成</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="forum">
+                <h2>发布新笔记</h2>
+                
+                <div class="post-form">
+                    <form id="noteForm">
+                        <div class="form-group">
+                            <label for="noteTitle">笔记标题</label>
+                            <input type="text" id="noteTitle" name="title" placeholder="输入笔记标题" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="noteContent">笔记内容</label>
+                            <textarea id="noteContent" name="content" placeholder="在此输入笔记内容..." required></textarea>
+                        </div>
+                        
+                        <button type="submit" class="post-btn">发布笔记</button>
+                    </form>
+                </div>
+                
+                <div id="message" class="message"></div>
+                
+                <div class="posts" id="postsContainer">
+                    <div class="post">
+                        <div class="post-header">
+                            <div class="post-title">欢迎来到XSS挑战论坛</div>
+                        </div>
+                        <div class="post-content">
+                            <p>这是一个练习XSS注入的安全平台。请尝试在发布笔记时注入图片标签，触发后台XSS漏洞。</p>
+                            <p>管理员会定期检查后台，查看您的笔记内容。</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <a href="Backstage.html" class="admin-link">管理员后台入口</a>
+                
+                <div class="level-indicator">
+                    <div class="level"></div>
+                    <div class="level active"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>XSS登录与后台注入练习平台 | 安全研究用途</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查登录状态
+            const loginData = localStorage.getItem('loginData');
+            if (!loginData) {
+                alert('请先登录！');
+                window.location.href = 'Login.html';
+                return;
+            }
+            
+            const noteForm = document.getElementById('noteForm');
+            const messageDiv = document.getElementById('message');
+            const postsContainer = document.getElementById('postsContainer');
+            
+            // 提交新笔记
+            noteForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const title = document.getElementById('noteTitle').value;
+                const content = document.getElementById('noteContent').value;
+                
+                // 获取现有笔记
+                let notes = JSON.parse(localStorage.getItem('notes')) || [];
+                
+                // 添加新笔记
+                const newNote = {
+                    id: Date.now(),
+                    title: title,
+                    content: content,
+                    timestamp: new Date().toISOString()
+                };
+                notes.push(newNote);
+                
+                // 保存到localStorage
+                localStorage.setItem('notes', JSON.stringify(notes));
+                
+                // 显示成功消息
+                messageDiv.textContent = '笔记发布成功！管理员将在后台查看';
+                messageDiv.className = 'message success';
+                messageDiv.style.display = 'block';
+                
+                // 清空表单
+                noteForm.reset();
+            });
+        });
+    </script>
+</body>
+</html>
