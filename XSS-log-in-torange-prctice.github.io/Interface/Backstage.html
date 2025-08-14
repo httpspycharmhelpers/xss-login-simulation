@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理 - XSS挑战平台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(45deg, #373B44, #4286f4);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header {
+            background: linear-gradient(to right, #373B44, #4286f4);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: "";
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+        
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .header p {
+            font-size: 18px;
+            max-width: 700px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+            opacity: 0.9;
+        }
+        
+        .dashboard {
+            display: flex;
+            padding: 30px;
+            min-height: 500px;
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-right: 20px;
+            border-left: 4px solid #373B44;
+        }
+        
+        .sidebar h2 {
+            color: #373B44;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .menu-item {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .menu-item:hover {
+            background: #e9ecef;
+        }
+        
+        .menu-item.active {
+            background: #373B44;
+            color: white;
+        }
+        
+        .main-content {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .section-title {
+            color: #373B44;
+            margin-bottom: 25px;
+            font-size: 24px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #373B44;
+            margin: 10px 0;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background: #f8f9fa;
+            color: #373B44;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .note-content {
+            max-width: 400px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #666;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 20px;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>后台管理系统</h1>
+            <p>管理员面板 - 查看用户笔记</p>
+        </div>
+        
+        <div class="dashboard">
+            <div class="sidebar">
+                <h2>管理菜单</h2>
+                <div class="menu-item active">用户笔记</div>
+                <div class="menu-item">用户管理</div>
+                <div class="menu-item">系统日志</div>
+                <div class="menu-item">安全设置</div>
+                <div class="menu-item">数据统计</div>
+            </div>
+            
+            <div class="main-content">
+                <h2 class="section-title">用户笔记管理</h2>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalNotes">0</div>
+                        <div class="stat-label">总笔记数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="todayNotes">0</div>
+                        <div class="stat-label">今日新增</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="usersCount">0</div>
+                        <div class="stat-label">用户数量</div>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>标题</th>
+                                <th>内容</th>
+                                <th>发布时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="notesTable">
+                            <!-- 笔记数据将通过JavaScript填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>XSS登录与后台注入练习平台 | 安全研究用途</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取笔记数据
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            const notesTable = document.getElementById('notesTable');
+            const totalNotes = document.getElementById('totalNotes');
+            const todayNotes = document.getElementById('todayNotes');
+            const usersCount = document.getElementById('usersCount');
+            
+            // 更新统计数据
+            totalNotes.textContent = notes.length;
+            
+            // 计算今日新增笔记
+            const today = new Date().toISOString().split('T')[0];
+            const todayNotesCount = notes.filter(note => {
+                return note.timestamp.split('T')[0] === today;
+            }).length;
+            todayNotes.textContent = todayNotesCount;
+            
+            // 获取用户数（简化处理）
+            usersCount.textContent = notes.length > 0 ? Math.min(notes.length, 10) : 0;
+            
+            // 填充表格数据
+            if (notes.length === 0) {
+                notesTable.innerHTML = `<tr><td colspan="4" style="text-align: center;">暂无笔记数据</td></tr>`;
+            } else {
+                notesTable.innerHTML = '';
+                notes.forEach(note => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${note.id}</td>
+                        <td>${note.title}</td>
+                        <td class="note-content">${note.content}</td>
+                        <td>${new Date(note.timestamp).toLocaleString()}</td>
+                    `;
+                    notesTable.appendChild(row);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
